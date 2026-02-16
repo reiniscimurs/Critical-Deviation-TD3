@@ -1,0 +1,21 @@
+_target_: models.CNNTD3.CNNTD3
+
+# Required (passed at runtime or composed)
+state_dim: 185
+action_dim: 2
+max_action: 1
+device: ${device}
+
+# Optimizer / training
+lr: 1e-4
+
+# Checkpointing
+save_every: 0
+save_directory: robot_nav/models/CNNTD3/checkpoint
+load_directory: robot_nav/models/CNNTD3/checkpoint
+model_name: CNNTD3
+load_model: false
+
+# Action bounds
+use_max_bound: false
+bound_weight: 0.25
