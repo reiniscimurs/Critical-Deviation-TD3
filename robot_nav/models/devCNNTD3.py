@@ -9,23 +9,6 @@ from torch.utils.tensorboard import SummaryWriter
 
 
 class Actor(nn.Module):
-    """
-    Actor network for the CNNTD3 agent.
-
-    This network takes as input a state composed of laser scan data, goal position encoding,
-    and previous action. It processes the scan through a 1D CNN stack and embeds the other
-    inputs before merging all features through fully connected layers to output a continuous
-    action vector.
-
-    Args:
-        action_dim (int): The dimension of the action space.
-
-    Architecture:
-        - 1D CNN layers process the laser scan data.
-        - Fully connected layers embed the goal vector (cos, sin, distance) and last action.
-        - Combined features are passed through two fully connected layers with LeakyReLU.
-        - Final action output is scaled with Tanh to bound the values.
-    """
 
     def __init__(self, action_dim):
         super(Actor, self).__init__()
@@ -44,17 +27,6 @@ class Actor(nn.Module):
         self.tanh = nn.Tanh()
 
     def forward(self, s):
-        """
-        Forward pass through the Actor network.
-
-        Args:
-            s (torch.Tensor): Input state tensor of shape (batch_size, state_dim).
-                              The last 5 elements are [distance, cos, sin, lin_vel, ang_vel].
-
-        Returns:
-            (torch.Tensor): Action tensor of shape (batch_size, action_dim),
-                          with values in range [-1, 1] due to tanh activation.
-        """
         if len(s.shape) == 1:
             s = s.unsqueeze(0)
         laser = s[:, :-2]
@@ -77,23 +49,6 @@ class Actor(nn.Module):
 
 
 class Critic(nn.Module):
-    """
-    Critic network for the CNNTD3 agent.
-
-    The Critic estimates Q-values for state-action pairs using two separate sub-networks
-    (Q1 and Q2), as required by the TD3 algorithm. Each sub-network uses a combination of
-    CNN-extracted features, embedded goal and previous action features, and the current action.
-
-    Args:
-        action_dim (int): The dimension of the action space.
-
-    Architecture:
-        - Shared CNN layers process the laser scan input.
-        - Goal and previous action are embedded and concatenated.
-        - Each Q-network uses separate fully connected layers to produce scalar Q-values.
-        - Both Q-networks receive the full state and current action.
-        - Outputs two Q-value tensors (Q1, Q2) for TD3-style training and target smoothing.
-    """
 
     def __init__(self, action_dim):
         super(Critic, self).__init__()
@@ -122,19 +77,6 @@ class Critic(nn.Module):
         torch.nn.init.kaiming_uniform_(self.layer_6.weight, nonlinearity="leaky_relu")
 
     def forward(self, s, action):
-        """
-        Forward pass through both Q-networks of the Critic.
-
-        Args:
-            s (torch.Tensor): Input state tensor of shape (batch_size, state_dim).
-                              The last 5 elements are [distance, cos, sin, lin_vel, ang_vel].
-            action (torch.Tensor): Current action tensor of shape (batch_size, action_dim).
-
-        Returns:
-            (tuple):
-                - q1 (torch.Tensor): First Q-value estimate (batch_size, 1).
-                - q2 (torch.Tensor): Second Q-value estimate (batch_size, 1).
-        """
         laser = s[:, :-2]
         act = s[:, -2:]
         laser = laser.unsqueeze(1)
@@ -166,31 +108,7 @@ class Critic(nn.Module):
         return q1, q2
 
 
-# CNNTD3 network
 class devCNNTD3(object):
-    """
-    CNNTD3 (Twin Delayed Deep Deterministic Policy Gradient with CNN-based inputs) agent for
-    continuous control tasks.
-
-    This class encapsulates the full implementation of the TD3 algorithm using neural network
-    architectures for the actor and critic, with optional bounding for critic outputs to
-    regularize learning. The agent is designed to train in environments where sensor
-    observations (e.g., LiDAR) are used for navigation tasks.
-
-    Args:
-        state_dim (int): Dimension of the input state.
-        action_dim (int): Dimension of the output action.
-        max_action (float): Maximum magnitude of the action.
-        device (torch.device): Torch device to use (CPU or GPU).
-        lr (float): Learning rate for both actor and critic optimizers.
-        save_every (int): Save model every N training iterations (0 to disable).
-        load_model (bool): Whether to load a pre-trained model at initialization.
-        save_directory (Path): Path to the directory for saving model checkpoints.
-        model_name (str): Base name for the saved model files.
-        load_directory (Path): Path to load model checkpoints from (if `load_model=True`).
-        use_max_bound (bool): Whether to apply maximum Q-value bounding during training.
-        bound_weight (float): Weight for the bounding loss term in total loss.
-    """
 
     def __init__(
         self,
@@ -199,13 +117,6 @@ class devCNNTD3(object):
         max_action,
         device,
         lr=1e-4,
-        save_every=0,
-        load_model=False,
-        save_directory=Path("robot_nav/models/CNNTD3/checkpoint"),
-        model_name="devCNNTD3",
-        load_directory=Path("robot_nav/models/CNNTD3/checkpoint"),
-        use_max_bound=False,
-        bound_weight=0.25,
     ):
         # Initialize the Actor network
         self.device = device
@@ -224,25 +135,8 @@ class devCNNTD3(object):
         self.max_action = max_action
         self.state_dim = state_dim
         self.iter_count = 0
-        if load_model:
-            self.load(filename=model_name, directory=load_directory)
-        self.save_every = save_every
-        self.model_name = model_name
-        self.save_directory = save_directory
-        self.use_max_bound = use_max_bound
-        self.bound_weight = bound_weight
 
     def get_action(self, obs, add_noise):
-        """
-        Selects an action for a given observation.
-
-        Args:
-            obs (np.ndarray): The current observation/state.
-            add_noise (bool): Whether to add exploration noise to the action.
-
-        Returns:
-            (np.ndarray): The selected action.
-        """
         if add_noise:
             return (
                 self.act(obs) + np.random.normal(0, 0.2, size=self.action_dim)
@@ -251,16 +145,6 @@ class devCNNTD3(object):
             return self.act(obs)
 
     def act(self, state):
-        """
-        Computes the deterministic action from the actor network for a given state.
-
-        Args:
-            state (np.ndarray): Input state.
-
-        Returns:
-            (np.ndarray): Action predicted by the actor network.
-        """
-        # Function to get the action from the actor
         state = torch.Tensor(state).to(self.device)
         return self.actor(state).cpu().data.numpy().flatten()
 
@@ -275,30 +159,7 @@ class devCNNTD3(object):
         policy_noise=0.2,
         noise_clip=0.5,
         policy_freq=2,
-        max_lin_vel=0.5,
-        max_ang_vel=1,
-        goal_reward=100,
-        distance_norm=10,
-        time_step=0.3,
     ):
-        """
-        Trains the CNNTD3 agent using sampled batches from the replay buffer.
-
-        Args:
-            replay_buffer (ReplayBuffer): Buffer storing environment transitions.
-            iterations (int): Number of training iterations.
-            batch_size (int): Size of each training batch.
-            discount (float): Discount factor for future rewards.
-            tau (float): Soft update rate for target networks.
-            policy_noise (float): Std. dev. of noise added to target policy.
-            noise_clip (float): Maximum value for target policy noise.
-            policy_freq (int): Frequency of actor and target network updates.
-            max_lin_vel (float): Maximum linear velocity for bounding calculations.
-            max_ang_vel (float): Maximum angular velocity for bounding calculations.
-            goal_reward (float): Reward value for reaching the goal.
-            distance_norm (float): Normalization factor for distance in bounding.
-            time_step (float): Time delta between steps.
-        """
         av_Q = 0
         max_Q = -inf
         av_loss = 0
@@ -378,76 +239,14 @@ class devCNNTD3(object):
 
             av_loss += loss
         self.iter_count += 1
-        # Write new values for tensorboard
-        if self.save_every > 0 and self.iter_count % self.save_every == 0:
-            self.save(filename=self.model_name, directory=self.save_directory)
 
-        return {"loss": av_loss / iterations,
-                "avg_Q": av_Q / iterations,
-                "max_Q": max_Q,
-                }
-
-    def save(self, filename, directory):
-        """
-        Saves the current model parameters to the specified directory.
-
-        Args:
-            filename (str): Base filename for saved files.
-            directory (Path): Path to save the model files.
-        """
-        Path(directory).mkdir(parents=True, exist_ok=True)
-        torch.save(self.actor.state_dict(), "%s/%s_actor.pth" % (directory, filename))
-        torch.save(
-            self.actor_target.state_dict(),
-            "%s/%s_actor_target.pth" % (directory, filename),
-        )
-        torch.save(self.critic.state_dict(), "%s/%s_critic.pth" % (directory, filename))
-        torch.save(
-            self.critic_target.state_dict(),
-            "%s/%s_critic_target.pth" % (directory, filename),
-        )
-
-    def load(self, filename, directory):
-        """
-        Loads model parameters from the specified directory.
-
-        Args:
-            filename (str): Base filename for saved files.
-            directory (Path): Path to load the model files from.
-        """
-        self.actor.load_state_dict(
-            torch.load("%s/%s_actor.pth" % (directory, filename))
-        )
-        self.actor_target.load_state_dict(
-            torch.load("%s/%s_actor_target.pth" % (directory, filename))
-        )
-        self.critic.load_state_dict(
-            torch.load("%s/%s_critic.pth" % (directory, filename))
-        )
-        self.critic_target.load_state_dict(
-            torch.load("%s/%s_critic_target.pth" % (directory, filename))
-        )
-        print(f"Loaded weights from: {directory}")
+        return {
+            "loss": av_loss / iterations,
+            "avg_Q": av_Q / iterations,
+            "max_Q": max_Q,
+        }
 
     def prepare_state(self, observation, action):
-        """
-        Prepares the environment's raw sensor data and navigation variables into
-        a format suitable for learning.
-
-        Args:
-            latest_scan (list or np.ndarray): Raw scan data (e.g., LiDAR).
-            distance (float): Distance to goal.
-            cos (float): Cosine of heading angle to goal.
-            sin (float): Sine of heading angle to goal.
-            collision (bool): Collision status (True if collided).
-            goal (bool): Goal reached status.
-            action (list or np.ndarray): Last action taken [lin_vel, ang_vel].
-
-        Returns:
-            (tuple):
-                - state (list): Normalized and concatenated state vector.
-                - terminal (int): Terminal flag (1 if collision or goal, else 0).
-        """
         latest_scan = observation["latest_scan"]
         distance = observation["distance"]
         collision = observation["collision"]

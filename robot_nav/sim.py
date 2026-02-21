@@ -2,7 +2,7 @@ import irsim
 import numpy as np
 import random
 
-from robot_nav.SIM_ENV.sim_env import SIM_ENV
+from sim_env import SIM_ENV
 
 
 class SIM(SIM_ENV):
@@ -27,7 +27,10 @@ class SIM(SIM_ENV):
         """
         display = False if disable_plotting else True
         self.env = irsim.make(
-            world_file, disable_all_plot=disable_plotting, display=display
+            world_file,
+            disable_all_plot=disable_plotting,
+            display=display,
+            log_level="CRITICAL",
         )
         robot_info = self.env.get_robot_info(0)
         self.robot_goal = robot_info.goal
@@ -115,10 +118,8 @@ class SIM(SIM_ENV):
         self.robot_goal = self.env.robot.goal
 
         action = [0.0, 0.0]
-        latest_scan, distance, cos, sin, _, _, action, reward = self.step(
-            lin_velocity=action[0], ang_velocity=action[1]
-        )
-        return latest_scan, distance, cos, sin, False, False, action, reward
+        observation = self.step(lin_velocity=action[0], ang_velocity=action[1])
+        return observation
 
     @staticmethod
     def get_reward(goal, collision, action, laser_scan):

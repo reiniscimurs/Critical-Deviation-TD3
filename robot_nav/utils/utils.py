@@ -5,22 +5,27 @@ from omegaconf import DictConfig
 import math
 
 
-def setup_clearm(cfg : DictConfig):
+def setup_clearm(cfg: DictConfig):
     os.environ["CLEARML_API_HOST"] = f"http://{cfg.ip}:{8008}"
     os.environ["CLEARML_WEB_HOST"] = f"http://{cfg.ip}:{8080}"
     os.environ["CLEARML_FILES_HOST"] = f"http://{cfg.ip}:{8081}"
     os.environ["CLEARML_API_ACCESS_KEY"] = cfg.access_key
     os.environ["CLEARML_API_SECRET_KEY"] = cfg.secret_key
 
-    task = Task.init(task_name=cfg.task_name, project_name=cfg.project_name,
-                     auto_connect_arg_parser=False,
-                     auto_connect_frameworks=False,
-                     auto_resource_monitoring=False,
-                     auto_connect_streams=False,
-                     )
+    task = Task.init(
+        task_name=cfg.task_name,
+        project_name=cfg.project_name,
+        auto_connect_arg_parser=False,
+        auto_connect_frameworks=False,
+        auto_resource_monitoring=False,
+        auto_connect_streams=False,
+    )
 
-    clearml_logger = ClearMLLogger(task_name=cfg.task_name, project_name=cfg.project_name)
+    clearml_logger = ClearMLLogger(
+        task_name=cfg.task_name, project_name=cfg.project_name
+    )
     return clearml_logger
+
 
 def compute_action(
     dist,

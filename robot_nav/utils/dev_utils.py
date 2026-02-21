@@ -1,6 +1,13 @@
+from pathlib import Path
+
 import numpy as np
 from ignite.engine import Events
 from ignite.handlers.clearml_logger import OutputHandler
+from ignite.handlers.checkpoint import Checkpoint, DiskSaver
+import torch
+
+from utils.utils import compute_action
+
 
 def evaluate(model, epoch, sim, eval_episodes=10):
     print("..............................................")
@@ -14,7 +21,9 @@ def evaluate(model, epoch, sim, eval_episodes=10):
         observation = sim.reset()
         done = False
         while not done and count < 301:
-            a = compute_action(observation["distance"], observation["sin"], observation["cos"])
+            a = compute_action(
+                observation["distance"], observation["sin"], observation["cos"]
+            )
             state, terminal = model.prepare_state(observation, a)
             action = model.get_action(np.array(state), False)
             observation = sim.step(
@@ -42,6 +51,7 @@ def evaluate(model, epoch, sim, eval_episodes=10):
     eval_result = {"avg_reward": avg_reward, "avg_col": avg_col, "avg_goal": avg_goal}
     return eval_result
 
+
 def attach_logging(clearml_logger, trainer, cfg):
     clearml_logger.attach_output_handler(
         trainer,
@@ -58,7 +68,39 @@ def attach_logging(clearml_logger, trainer, cfg):
                 "avg_reward": trainer.state.eval["avg_reward"],
                 "avg_col": trainer.state.eval["avg_col"],
                 "avg_goal": trainer.state.eval["avg_goal"],
-            }
+            },
         ),
         event_name=Events.EPOCH_COMPLETED(every=cfg.episodes_per_epoch),
     )
+
+
+def init_checkpoint(trainer, model, cfg):
+    to_save = {
+        "actor": model.actor,
+        "actor_target": model.actor_target,
+        "critic": model.critic,
+        "critic_target": model.critic_target,
+        "actor_optimizer": model.actor_optimizer,
+        "critic_optimizer": model.critic_optimizer,
+        "trainer": trainer,
+    }
+
+    save_dir = Path(cfg.save_directory)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    if cfg.load_checkpoint:
+        checkpoint_fp = save_dir / cfg.checkpoint
+        checkpoint = torch.load(checkpoint_fp, map_location=cfg.device)
+
+        Checkpoint.load_objects(to_load=to_save, checkpoint=checkpoint)
+
+        print(f"Loaded checkpoint from {checkpoint_fp}")
+
+    handler = Checkpoint(
+        to_save,
+        DiskSaver(save_dir, require_empty=False),
+        n_saved=1,
+        filename_prefix="rl_",
+    )
+
+    trainer.add_event_handler(Events.EPOCH_COMPLETED(every=cfg.save_every), handler)
