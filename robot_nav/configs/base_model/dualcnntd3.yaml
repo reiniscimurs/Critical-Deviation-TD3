@@ -1,0 +1,7 @@
+_target_: models.dualCNNTD3.dualCNNTD3
+
+state_dim: 185
+action_dim: ${action_dim}
+max_action: ${max_action}
+device: ${device}
+lr: 1e-4

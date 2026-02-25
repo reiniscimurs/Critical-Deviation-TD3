@@ -1,6 +1,5 @@
 from utils.dev_utils import attach_logging, evaluate, init_checkpoint
 
-from ignite.handlers.checkpoint import Checkpoint
 import numpy as np
 from replay_buffer import ReplayBuffer
 from dev_sim import DEV_SIM

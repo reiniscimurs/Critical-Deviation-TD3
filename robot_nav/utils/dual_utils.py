@@ -1,11 +1,10 @@
 from pathlib import Path
 
 import numpy as np
-from ignite.engine import Events
-from ignite.handlers.clearml_logger import OutputHandler
-from ignite.handlers.checkpoint import Checkpoint, DiskSaver
 import torch
-from utils import compute_action
+from ignite.engine import Events
+from ignite.handlers import Checkpoint, DiskSaver
+from ignite.handlers.clearml_logger import OutputHandler
 
 
 def evaluate(model, epoch, sim, eval_episodes=10):
@@ -20,20 +19,20 @@ def evaluate(model, epoch, sim, eval_episodes=10):
         observation = sim.reset()
         done = False
         while not done and count < 301:
-            a = compute_action(
-                observation["distance"], observation["sin"], observation["cos"]
-            )
-            state, terminal = model.prepare_state(observation, a)
-            action = model.get_action(np.array(state), False)
+            state, terminal = model.prepare_state(observation)
+            action, dev_action = model.get_action(state, False)
             observation = sim.step(
-                lin_velocity=a[0],
-                ang_velocity=a[1],
-                override_lin=action[0],
-                override_ang=action[1],
-                switch=False,
+                lin_velocity=action[0],
+                ang_velocity=action[1],
+                override_lin=dev_action[0],
+                override_ang=dev_action[1],
             )
-
-            avg_reward += observation["reward"]
+            avg_reward += (
+                observation["reward"]["collision"]
+                + observation["reward"]["goal"]
+                + observation["reward"]["step"]
+                - observation["reward"]["deviation"]
+            )
             count += 1
             if observation["collision"]:
                 col += 1
@@ -62,7 +61,6 @@ def attach_logging(clearml_logger, trainer, cfg):
         trainer,
         log_handler=OutputHandler(
             tag="eval",
-            metric_names=["avg_reward", "avg_col", "avg_goal"],
             output_transform=lambda _: {
                 "avg_reward": trainer.state.eval["avg_reward"],
                 "avg_col": trainer.state.eval["avg_col"],
@@ -81,6 +79,12 @@ def init_checkpoint(trainer, model, cfg):
         "critic_target": model.critic_target,
         "actor_optimizer": model.actor_optimizer,
         "critic_optimizer": model.critic_optimizer,
+        "dev_actor": model.dev_actor,
+        "dev_actor_target": model.dev_actor_target,
+        "dev_critic": model.dev_critic,
+        "dev_critic_target": model.dev_critic_target,
+        "dev_actor_optimizer": model.dev_actor_optimizer,
+        "dev_critic_optimizer": model.dev_critic_optimizer,
         "trainer": trainer,
     }
 
