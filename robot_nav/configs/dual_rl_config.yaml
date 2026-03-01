@@ -13,9 +13,10 @@ training_iterations: 80  # how many batches to use for single training cycle
 batch_size: 64  # batch size for each training iteration
 max_steps: 300  # maximum number of steps in single episode
 device: cuda
+task_name: 'dual_rl_training'
 
 save_directory: robot_nav/models/dualCNNTD3-2/checkpoint
-load_checkpoint: false
+load_checkpoint: true
 checkpoint: rl__checkpoint_344025.pt
 
 save_every: 5  # save the model every n training cycles

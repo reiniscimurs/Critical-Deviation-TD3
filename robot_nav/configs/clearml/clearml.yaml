@@ -2,5 +2,5 @@ ip: "127.0.0.1"
 access_key: "B7Y2U0L6LKYVVVN2ELQTMMWFF8NQI6"
 secret_key: "9D9FVBbdPWVoX7ocTb4rwtLXlPKJ0mLC2Nkrk5nnzNlOLpYfPuVsbUAkIWxIbEMfhns"
 
-task_name: "full_dual_rl_training"
+task_name: ${task_name}
 project_name: "critical_dev_td3"

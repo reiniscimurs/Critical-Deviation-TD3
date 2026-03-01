@@ -123,6 +123,38 @@ def attach_logging(clearml_logger, trainer, cfg):
     )
 
 
+def upload_metrics(clearml_logger, trainer):
+    metrics = {
+        "avg_reward": trainer.state.eval["avg_reward"],
+        "avg_col": trainer.state.eval["avg_col"],
+        "avg_goal": trainer.state.eval["avg_goal"],
+    }
+
+    for k, v in metrics.items():
+        clearml_logger.report_scalar(
+            title="eval",
+            series=k,
+            value=v,
+            iteration=trainer.state.epoch,  # or global step
+        )
+
+    metrics = {
+        "av_ov_lin": trainer.state.eval["av_ov_lin"],
+        "std_ov_lin": trainer.state.eval["std_ov_lin"],
+        "av_ov_ang": trainer.state.eval["av_ov_ang"],
+        "std_ov_ang": trainer.state.eval["std_ov_ang"],
+        "av_dev_reward": trainer.state.eval["av_dev_reward"],
+    }
+
+    for k, v in metrics.items():
+        clearml_logger.report_scalar(
+            title="dev_eval",
+            series=k,
+            value=v,
+            iteration=trainer.state.epoch,  # or global step
+        )
+
+
 def init_checkpoint(trainer, model, cfg):
     to_save = {
         "actor": model.actor,
