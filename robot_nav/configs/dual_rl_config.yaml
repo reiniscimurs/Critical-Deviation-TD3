@@ -1,10 +1,10 @@
 defaults:
-  - base_model: dualcnntd3
+  - base_model: dualcnntd3-2
   - clearml: clearml
 action_dim: 2  # number of actions produced by the model
 max_action: 1  # maximum absolute value of output actions
 nr_eval_episodes: 10  # how many episodes to use to run evaluation
-max_epochs: 6000  # max number of epochs
+max_epochs: 3000  # max number of epochs
 episodes_per_epoch: 50  # how many episodes to run in single epoch
 train_every_n: 2  # train and update network parameters every n episodes
 training_iterations: 80  # how many batches to use for single training cycle
@@ -12,8 +12,8 @@ batch_size: 64  # batch size for each training iteration
 max_steps: 300  # maximum number of steps in single episode
 device: cuda
 
-save_directory: robot_nav/models/dualCNNTD3/checkpoint
-load_checkpoint: false
-checkpoint: rl_checkpoint_12006.pt
+save_directory: robot_nav/models/dualCNNTD3-2/checkpoint
+load_checkpoint: true
+checkpoint: rl__checkpoint_344025.pt
 
 save_every: 5  # save the model every n training cycles

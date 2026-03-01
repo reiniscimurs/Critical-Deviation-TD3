@@ -99,7 +99,7 @@ def init_checkpoint(trainer, model, cfg):
         to_save,
         DiskSaver(save_dir, require_empty=False),
         n_saved=1,
-        filename_prefix="rl_",
+        filename_prefix="rl",
     )
 
     trainer.add_event_handler(Events.EPOCH_COMPLETED(every=cfg.save_every), handler)

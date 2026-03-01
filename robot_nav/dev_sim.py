@@ -13,7 +13,7 @@ class DEV_SIM(SIM):
         override_ang=-0.1,
         switch=0,
     ):
-        action = [(lin_velocity + 1) / 4, ang_velocity]
+        action = [(lin_velocity + 1) / 2, ang_velocity]
         override_action = [override_lin / 2, override_ang * 2]
         if switch:
             a_in = action[:]

@@ -1,6 +1,6 @@
 from pathlib import Path
 
-import numpy as np
+import statistics
 import torch
 from ignite.engine import Events
 from ignite.handlers import Checkpoint, DiskSaver
@@ -13,6 +13,9 @@ def evaluate(model, epoch, sim, eval_episodes=10):
     avg_reward = 0.0
     col = 0
     goals = 0
+    override_lin = []
+    override_ang = []
+    override_reward = []
     for _ in range(eval_episodes):
         count = 0
 
@@ -21,12 +24,15 @@ def evaluate(model, epoch, sim, eval_episodes=10):
         while not done and count < 301:
             state, terminal = model.prepare_state(observation)
             action, dev_action = model.get_action(state, False)
+            override_lin.append(dev_action[0])
+            override_ang.append(dev_action[1])
             observation = sim.step(
                 lin_velocity=action[0],
                 ang_velocity=action[1],
                 override_lin=dev_action[0],
                 override_ang=dev_action[1],
             )
+            override_reward.append(-observation["reward"]["deviation"])
             avg_reward += (
                 observation["reward"]["collision"]
                 + observation["reward"]["goal"]
@@ -46,17 +52,48 @@ def evaluate(model, epoch, sim, eval_episodes=10):
     print(f"Average Collision rate: {avg_col}")
     print(f"Average Goal rate: {avg_goal}")
     print("..............................................")
-    eval_result = {"avg_reward": avg_reward, "avg_col": avg_col, "avg_goal": avg_goal}
+    av_ov_lin = statistics.mean(override_lin)
+    std_ov_lin = statistics.stdev(override_lin)
+    av_ov_ang = statistics.mean(override_ang)
+    std_ov_ang = statistics.stdev(override_ang)
+    av_dev_reward = statistics.mean(override_reward)
+
+    eval_result = {
+        "avg_reward": avg_reward,
+        "avg_col": avg_col,
+        "avg_goal": avg_goal,
+        "av_ov_lin": av_ov_lin,
+        "std_ov_lin": std_ov_lin,
+        "av_ov_ang": av_ov_ang,
+        "std_ov_ang": std_ov_ang,
+        "av_dev_reward": av_dev_reward,
+    }
     return eval_result
 
 
 def attach_logging(clearml_logger, trainer, cfg):
     clearml_logger.attach_output_handler(
         trainer,
-        tag="training",
+        tag="base_training",
         event_name=Events.EPOCH_COMPLETED(every=cfg.train_every_n),
-        output_transform=lambda out: out,
+        output_transform=lambda _: {
+            "base_loss": trainer.state.output["base_loss"],
+            "base_avg_Q": trainer.state.output["base_avg_Q"],
+            "base_max_Q": trainer.state.output["base_max_Q"],
+        },
     )
+
+    clearml_logger.attach_output_handler(
+        trainer,
+        tag="dev_training",
+        event_name=Events.EPOCH_COMPLETED(every=cfg.train_every_n),
+        output_transform=lambda _: {
+            "dev_loss": trainer.state.output["dev_loss"],
+            "dev_avg_Q": trainer.state.output["dev_avg_Q"],
+            "dev_max_Q": trainer.state.output["dev_max_Q"],
+        },
+    )
+
     clearml_logger.attach(
         trainer,
         log_handler=OutputHandler(
@@ -65,6 +102,21 @@ def attach_logging(clearml_logger, trainer, cfg):
                 "avg_reward": trainer.state.eval["avg_reward"],
                 "avg_col": trainer.state.eval["avg_col"],
                 "avg_goal": trainer.state.eval["avg_goal"],
+            },
+        ),
+        event_name=Events.EPOCH_COMPLETED(every=cfg.episodes_per_epoch),
+    )
+
+    clearml_logger.attach(
+        trainer,
+        log_handler=OutputHandler(
+            tag="dev_eval",
+            output_transform=lambda _: {
+                "av_ov_lin": trainer.state.eval["av_ov_lin"],
+                "std_ov_lin": trainer.state.eval["std_ov_lin"],
+                "av_ov_ang": trainer.state.eval["av_ov_ang"],
+                "std_ov_ang": trainer.state.eval["std_ov_ang"],
+                "av_dev_reward": trainer.state.eval["av_dev_reward"],
             },
         ),
         event_name=Events.EPOCH_COMPLETED(every=cfg.episodes_per_epoch),
@@ -103,7 +155,7 @@ def init_checkpoint(trainer, model, cfg):
         to_save,
         DiskSaver(save_dir, require_empty=False),
         n_saved=1,
-        filename_prefix="rl_",
+        filename_prefix="rl",
     )
 
     trainer.add_event_handler(Events.EPOCH_COMPLETED(every=cfg.save_every), handler)
