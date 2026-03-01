@@ -1,7 +1,6 @@
 from utils.dev_utils import attach_logging, evaluate, init_checkpoint
 
 import numpy as np
-from replay_buffer import ReplayBuffer
 from dev_sim import DEV_SIM
 from ignite.engine import Engine, Events
 import hydra
@@ -17,7 +16,7 @@ def main(cfg: DictConfig):
     model = hydra.utils.instantiate(cfg.dev_model)
 
     sim = DEV_SIM(world_file="robot_world.yaml", disable_plotting=False)
-    replay_buffer = ReplayBuffer(buffer_size=50000)
+    replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
 
     def run_step(engine, timestep):
         observation = engine.state.observation

@@ -1,5 +1,4 @@
 import numpy as np
-from replay_buffer import ReplayBuffer
 from dev_sim import DEV_SIM
 from ignite.engine import Engine, Events
 import hydra
@@ -21,8 +20,8 @@ def main(cfg: DictConfig):
         world_file="robot_world.yaml", disable_plotting=False
     )  # instantiate environment
 
-    dev_replay_buffer = ReplayBuffer(buffer_size=50000)
-    base_replay_buffer = ReplayBuffer(buffer_size=50000)
+    dev_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
+    base_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
 
     def run_step(engine, timestep):
         observation = engine.state.observation

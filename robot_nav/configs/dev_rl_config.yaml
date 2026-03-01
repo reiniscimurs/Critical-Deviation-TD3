@@ -1,6 +1,7 @@
 defaults:
   - dev_model: devcnntd3
   - clearml: clearml
+  - replay_buffer: replay_buffer
 action_dim: 2  # number of actions produced by the model
 max_action: 1  # maximum absolute value of output actions
 state_dim: 182  # number of input values in the neural network (vector length of state input)

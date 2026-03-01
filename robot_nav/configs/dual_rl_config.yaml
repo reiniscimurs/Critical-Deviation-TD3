@@ -1,6 +1,7 @@
 defaults:
   - base_model: dualcnntd3-2
   - clearml: clearml
+  - replay_buffer: replay_buffer
 action_dim: 2  # number of actions produced by the model
 max_action: 1  # maximum absolute value of output actions
 nr_eval_episodes: 10  # how many episodes to use to run evaluation
@@ -13,7 +14,7 @@ max_steps: 300  # maximum number of steps in single episode
 device: cuda
 
 save_directory: robot_nav/models/dualCNNTD3-2/checkpoint
-load_checkpoint: true
+load_checkpoint: false
 checkpoint: rl__checkpoint_344025.pt
 
 save_every: 5  # save the model every n training cycles

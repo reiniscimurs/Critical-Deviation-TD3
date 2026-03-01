@@ -1,0 +1,4 @@
+_target_: utils.replay_buffer.ReplayBuffer
+
+buffer_size: 5000
+random_seed: 123

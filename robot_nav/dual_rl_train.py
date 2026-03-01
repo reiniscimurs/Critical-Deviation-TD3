@@ -1,6 +1,5 @@
 from ignite.engine import Engine, Events
 from dual_sim import DUAL_SIM
-from replay_buffer import ReplayBuffer
 import numpy as np
 from utils.utils import setup_clearm
 import hydra
@@ -17,7 +16,7 @@ def main(cfg: DictConfig):
 
     sim = DUAL_SIM(world_file="robot_world.yaml", disable_plotting=False)
 
-    train_replay_buffer = ReplayBuffer(buffer_size=50000)
+    train_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
 
     def run_step(engine, timestep):
         observation = engine.state.observation
