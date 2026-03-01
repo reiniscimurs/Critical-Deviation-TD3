@@ -2,7 +2,7 @@ import irsim
 import numpy as np
 import random
 
-from sim_env import SIM_ENV
+from sim.sim_env import SIM_ENV
 
 
 class SIM(SIM_ENV):

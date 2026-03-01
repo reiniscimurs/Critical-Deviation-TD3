@@ -5,7 +5,7 @@ from ignite.engine import Events
 from ignite.handlers.clearml_logger import OutputHandler
 from ignite.handlers.checkpoint import Checkpoint, DiskSaver
 import torch
-from utils import compute_action
+from utils.utils import compute_action
 
 
 def evaluate(model, epoch, sim, eval_episodes=10):

@@ -1,5 +1,4 @@
 import numpy as np
-from dev_sim import DEV_SIM
 from ignite.engine import Engine, Events
 import hydra
 from omegaconf import DictConfig
@@ -16,9 +15,7 @@ def main(cfg: DictConfig):
     base_model = hydra.utils.instantiate(cfg.base_model)
     deviation_model = hydra.utils.instantiate(cfg.dev_model)
 
-    sim = DEV_SIM(
-        world_file="robot_world.yaml", disable_plotting=False
-    )  # instantiate environment
+    sim = hydra.utils.instantiate(cfg.sim)
 
     dev_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
     base_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)

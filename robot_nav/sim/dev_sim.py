@@ -1,6 +1,6 @@
 import numpy as np
 
-from sim import SIM
+from sim.sim import SIM
 
 
 class DEV_SIM(SIM):

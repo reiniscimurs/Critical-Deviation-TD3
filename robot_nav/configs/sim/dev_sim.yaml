@@ -1,0 +1,4 @@
+_target_: sim.dev_sim.DEV_SIM
+
+world_file: 'robot_world.yaml'
+disable_plotting: false

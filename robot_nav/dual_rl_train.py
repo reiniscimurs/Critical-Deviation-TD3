@@ -1,5 +1,4 @@
 from ignite.engine import Engine, Events
-from dual_sim import DUAL_SIM
 import numpy as np
 from utils.utils import setup_clearm
 import hydra
@@ -14,7 +13,7 @@ def main(cfg: DictConfig):
     clearml_logger = setup_clearm(cfg.clearml)
     train_model = hydra.utils.instantiate(cfg.base_model)
 
-    sim = DUAL_SIM(world_file="robot_world.yaml", disable_plotting=False)
+    sim = hydra.utils.instantiate(cfg.sim)
 
     train_replay_buffer = hydra.utils.instantiate(cfg.replay_buffer)
 

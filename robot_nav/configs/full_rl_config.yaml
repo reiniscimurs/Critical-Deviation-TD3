@@ -3,6 +3,7 @@ defaults:
   - dev_model: devcnntd3
   - clearml: clearml
   - replay_buffer: replay_buffer
+  - sim: dev_sim
 action_dim: 2  # number of actions produced by the model
 max_action: 1  # maximum absolute value of output actions
 nr_eval_episodes: 10  # how many episodes to use to run evaluation

@@ -1,4 +1,4 @@
-from dev_sim import DEV_SIM
+from sim.dev_sim import DEV_SIM
 
 
 class DUAL_SIM(DEV_SIM):
